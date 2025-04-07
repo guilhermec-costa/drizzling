@@ -2,7 +2,11 @@
   "name": "hono-api",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts"
+    "dev": "tsx watch src/index.ts",
+    "db:generate": "npx drizzle-kit generate",
+    "db:drop": "npx drizzle-kit drop",
+    "db:migrate": "tsx src/scripts/migrate.ts",
+    "db:view": "npx drizzle-kit studio"
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
