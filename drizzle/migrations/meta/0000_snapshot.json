@@ -1,5 +1,5 @@
 {
-  "id": "20f0c271-4054-477e-908f-e6555f64d745",
+  "id": "e8e42b8a-3798-40af-9538-b5531962170d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -297,7 +297,9 @@
       "schema": "public",
       "values": [
         "ADMIN",
-        "BASIC"
+        "BASIC",
+        "MODERATOR",
+        "USER"
       ]
     }
   },

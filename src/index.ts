@@ -1,13 +1,10 @@
-import {config} from "dotenv";
+import { config } from "dotenv";
 config();
 
-import { Hono } from 'hono'
-import bookRouter from './routes/ books.js';
-import {serve} from "@hono/node-server"
 import { getPgClient } from "./scripts/migrate.js";
-import {drizzle} from "drizzle-orm/postgres-js"
+import { drizzle } from "drizzle-orm/postgres-js";
 import { globalSchema } from "./db/index-schema.js";
-import { user } from "./application/schemas/book.schema.js";
+import { user, userPreferences, type UserT } from "./application/schemas/user.schema.js";
 import { sql } from "drizzle-orm";
 
 const pgClient = getPgClient();
@@ -16,34 +13,96 @@ const db = drizzle(pgClient, {
   schema: globalSchema,
 });
 
-db.delete(user).then(() => {
-  console.log("delete users");
-});
+(async function () {
+  await db.delete(user);
+  console.log("Deleted all users");
 
-db.insert(user).values({
-  email: "echina725@gmail.com",
-  name: "Guilherme China",
-  role: "ADMIN"
-}).returning({
-  id: user.id
-}).then((r) => {
-  console.log(r)
-});
+  const r = await db.insert(user).values([
+    {
+      email: "echina725@gmail.com",
+      name: "Guilherme China",
+      age: 20,
+      role: "ADMIN",
+    },
+    {
+      email: "echina1@gmail.com",
+      name: "Edson China",
+      age: 53,
+      role: "ADMIN",
+    },
+    {
+      email: "ana.silva@gmail.com",
+      name: "Ana Silva",
+      age: 28,
+      role: "USER",
+    },
+    {
+      email: "joao.pereira@gmail.com",
+      name: "João Pereira",
+      age: 35,
+      role: "USER",
+    },
+    {
+      email: "mariana.lopes@gmail.com",
+      name: "Mariana Lopes",
+      age: 42,
+      role: "MODERATOR",
+    },
+    {
+      email: "carlos.souza@gmail.com",
+      name: "Carlos Souza",
+      age: 31,
+      role: "USER",
+    },
+    {
+      email: "bruna.almeida@gmail.com",
+      name: "Bruna Almeida",
+      age: 25,
+      role: "USER",
+    },
+    {
+      email: "fernando.rodrigues@gmail.com",
+      name: "Fernando Rodrigues",
+      age: 45,
+      role: "MODERATOR",
+    },
+    {
+      email: "juliana.martins@gmail.com",
+      name: "Juliana Martins",
+      age: 38,
+      role: "USER",
+    },
+    {
+      email: "roberto.ferreira@gmail.com",
+      name: "Roberto Ferreira",
+      age: 50,
+      role: "ADMIN",
+    },
+  ]).returning();
 
-db.query.user.findFirst({
-  extras: {
-    uppercaseName: sql<string>`upper(${user.name})`.as("uppercaseName")
-  }
-}).then((r) => {
-  console.log(r)
-})
+  const selectedUsers = await db.query.user.findMany({
+    columns: {
+      id: true,
+      email: true,
+      name: true,
+    },
+    extras: {
+      uppercaseName: sql<string>`upper(${user.name})`.as("uppercaseName"),
+    },
+    // relations api
+    with: {
+      preferences: {
+        columns: {
+          emailUpdates: true,
+          id: true
+        }
+      },
+      posts: true
+    },
+    limit: 15,
+    offset: 0,
+    orderBy: user.name
+  });
 
-const app = new Hono();
-app.route("/books", bookRouter);
-
-serve({
-  fetch: app.fetch,
-  port: 3000 
-}, (info) => {
-  console.log(`Server is running on http://localhost:${info.port}`)
-})
+  console.log(selectedUsers);
+})();

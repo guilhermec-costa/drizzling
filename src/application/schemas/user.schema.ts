@@ -12,7 +12,9 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-export const userRoleEnum = pgEnum("user_role", ["ADMIN", "BASIC"]);
+import {relations, type InferSelectModel} from "drizzle-orm";
+
+export const userRoleEnum = pgEnum("user_role", ["ADMIN", "BASIC", "MODERATOR", "USER"]);
 
 export const user = pgTable(
   "user",
@@ -29,6 +31,8 @@ export const user = pgTable(
     unique("uniqueNameAndEmail").on(t.name, t.email),
   ]
 );
+
+export type UserT = InferSelectModel<typeof user>;
 
 export const userPreferences = pgTable("user_preferences", {
   id: uuid("id").defaultRandom(),
@@ -60,10 +64,58 @@ export const postCategory = pgTable(
     postId: uuid("post_id")
       .notNull()
       .references(() => post.id),
-    category: uuid("category_id")
+    categoryId: uuid("category_id")
       .notNull()
       .references(() => category.id),
   },
   // composite primary key
-  (t) => [primaryKey({ columns: [t.postId, t.category] })]
+  (t) => [primaryKey({ columns: [t.postId, t.categoryId] })]
 );
+
+// relations
+
+export const userRelations = relations(user, ({ one, many }) => {
+  return {
+    // user has one userPreference
+    preferences: one(userPreferences),
+    posts: many(post)
+  }
+})
+
+export const userPreferenceRelations = relations(userPreferences, ({ one, many }) => {
+  return {
+    user: one(user, {
+      fields: [userPreferences.userId],
+      references: [user.id]
+    }),
+  }
+});
+
+export const postRelations = relations(post, ({ one, many }) => {
+  return {
+    author: one(user, {
+      fields: [post.authorId],
+      references: [user.id]
+    }),
+    postCategories: many(postCategory),
+  }
+});
+
+export const categoryRelations = relations(category, ({one, many}) => {
+  return {
+    postCategories: many(postCategory)
+  }
+})
+
+export const postCategoryRelations = relations(postCategory, ({ one }) => {
+  return {
+    posts: one(post, {
+      fields: [postCategory.postId],
+      references: [post.id]
+    }),
+    categories: one(category, {
+      fields: [postCategory.categoryId],
+      references: [category.id]
+    })
+  }
+})
